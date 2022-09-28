@@ -1,0 +1,158 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
+
+
+
+contract ElectionCommission  {
+
+    address owner;
+
+    constructor() {
+        owner=msg.sender;
+    }
+
+    modifier onlyOwner()  {
+        require(msg.sender==owner, "invalid owner");
+        _;
+    }
+
+    uint _start;
+    uint _end;
+
+    modifier timeOver{
+        require(block.timestamp<=_end, " The time is over");
+        _;
+    }
+
+    function start() public onlyOwner{
+
+        _start = block.timestamp ;
+    }
+
+    function end(uint totalTime) public  onlyOwner {
+
+        _end = totalTime + _start;
+    }
+
+    function timeLeft() public view timeOver returns (uint){
+
+        return _end-block.timestamp;
+    }
+
+    /*function res() public view {
+        require(block.timestamp>=_end, "Election is not yet over");
+
+    }*/
+
+
+}
+
+contract election is ElectionCommission {
+
+    struct Candidate{
+    uint id;
+    string candidateName;
+    uint voteCount;
+
+    }
+
+mapping (address=>uint) public voters;
+
+mapping (uint=> Candidate)public candidates;
+ 
+uint public candidatesCount;
+
+
+
+    function CandidateReg(string memory _name) public payable  onlyOwner{
+
+        //require(start>10);
+
+        require(msg.value == 1 ether,"send required eth ");
+        //require(condition, message);
+
+        
+    
+        candidatesCount++;
+        candidates[candidatesCount]=Candidate(candidatesCount,_name,0);
+
+    }
+
+    function vote(uint _candidateId) public timeOver {
+
+    
+    require(voters[msg.sender] <1); //msg.sender => person who has initiated smart contract
+    //require(!voters[msg.sender]);
+
+    require(_candidateId>0 && _candidateId<=candidatesCount); //correct set of candidates
+
+
+    
+
+    //Voter vote increementation
+    voters[msg.sender] += 1;
+
+    candidates[_candidateId].voteCount++;
+
+}
+
+  function withdraw() public {
+        // get the amount of Ether stored in this contract
+        require(block.timestamp>_end);
+        uint amount = address(this).balance;
+
+        // send all Ether to owner
+        // Owner can receive Ether since the address of owner is payable
+        (bool success, ) = owner.call{value: amount}("");
+        require(success, "Failed to send Ether");
+    }
+
+  function res() public onlyOwner  returns(string memory)  {
+        require(block.timestamp>=_end, "Election is not yet over");
+
+        // uint i=0;
+
+        // while(i>=0)
+        // {
+        //     if(candidates[i].voteCount >= candidates[i+1].voteCount)
+        //     {
+
+        //     }
+        // }
+        /*uint temp;
+        for(uint i=0;i>=0;i++)
+        {
+            for(uint j=0;j>=0;j++){
+                if(candidates[j].voteCount>candidates[j+1].voteCount)
+                {
+                  temp=candidates[j].voteCount;
+                  candidates[j].voteCount=candidates[j+1].voteCount;
+                  candidates[j+1].voteCount=temp;
+
+                 }
+
+            }
+            
+        }*/
+
+       //return 
+
+       
+        uint256 j;
+
+        
+        uint256 temp=0;
+        for( uint i =1; i<=candidatesCount; i++) {
+            if ( candidates[i].voteCount > temp ) {
+                temp = candidates[i].voteCount;
+                j = i;
+            }
+        }
+
+        return candidates[j].name;
+        
+        
+
+    }
+
+}
